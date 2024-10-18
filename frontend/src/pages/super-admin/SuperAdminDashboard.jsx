@@ -38,22 +38,27 @@ const SuperAdminDashboard = () => {
       };
 
       // Fetch all data in parallel
-      const [adminsRes, usersRes, sellersRes, statsRes] = await Promise.all([
+      const [dashboardRes, adminsRes, usersRes, sellersRes] = await Promise.all([
+        fetch('/api/super-admin/dashboard', { headers }),
         fetch('/api/super-admin/admins', { headers }),
         fetch('/api/super-admin/users', { headers }),
-        fetch('/api/super-admin/sellers', { headers }),
-        fetch('/api/super-admin/dashboard/stats', { headers })
+        fetch('/api/super-admin/sellers', { headers })
       ]);
 
+      const dashboardData = await dashboardRes.json();
       const adminsData = await adminsRes.json();
       const usersData = await usersRes.json();
       const sellersData = await sellersRes.json();
-      const statsData = await statsRes.json();
 
-      setAdmins(adminsData.data || []);
-      setUsers(usersData.data || []);
-      setSellers(sellersData.data || []);
-      setStats(statsData);
+      setStats(dashboardData);
+      setAdmins(adminsData || []);
+      setUsers(usersData || []);
+      setSellers(sellersData || []);
+      
+      console.log('Super Admin Dashboard Data:', dashboardData);
+      console.log('Admins:', adminsData);
+      console.log('Users:', usersData);
+      console.log('Sellers:', sellersData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -128,8 +133,8 @@ const SuperAdminDashboard = () => {
   const handleVerifySeller = async (sellerId) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`/api/super-admin/sellers/${sellerId}/verify`, {
-        method: 'PUT',
+      await fetch(`/api/super-admin/sellers/${sellerId}/approve`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -232,28 +237,28 @@ const SuperAdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard 
                 title="Total Users" 
-                value={stats.total_users?.toLocaleString() || 0} 
+                value={stats.stats?.total_users?.toLocaleString() || 0} 
                 icon={<FiUsers />}
                 color="bg-gradient-to-br from-blue-500 to-indigo-600"
                 trend={18.2}
               />
               <StatCard 
                 title="Total Admins" 
-                value={stats.total_admins?.toLocaleString() || 0} 
+                value={stats.stats?.total_admins?.toLocaleString() || 0} 
                 icon={<FiShield />}
                 color="bg-gradient-to-br from-green-500 to-emerald-600"
                 trend={5.4}
               />
               <StatCard 
                 title="Total Sellers" 
-                value={stats.total_sellers?.toLocaleString() || 0} 
+                value={stats.stats?.total_sellers?.toLocaleString() || 0} 
                 icon={<FiPackage />}
                 color="bg-gradient-to-br from-purple-500 to-pink-600"
                 trend={12.7}
               />
               <StatCard 
                 title="Total Revenue" 
-                value={`$${stats.total_revenue?.toLocaleString() || 0}`} 
+                value={`$${stats.stats?.total_revenue?.toLocaleString() || 0}`} 
                 icon={<FiDollarSign />}
                 color="bg-gradient-to-br from-orange-500 to-red-600"
                 trend={22.1}
@@ -265,9 +270,9 @@ const SuperAdminDashboard = () => {
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-xl font-semibold mb-4">User Growth Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={stats.user_growth || []}>
+                  <LineChart data={stats.charts?.user_growth || []}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
+                    <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
                     <Line type="monotone" dataKey="users" stroke="#8B5CF6" strokeWidth={3} />
@@ -276,25 +281,18 @@ const SuperAdminDashboard = () => {
               </div>
 
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Role Distribution</h3>
+                <h3 className="text-xl font-semibold mb-4">Orders vs Revenue</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={stats.role_distribution || []}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {(stats.role_distribution || []).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <LineChart data={stats.charts?.orders_revenue || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
                     <Tooltip />
-                  </PieChart>
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} />
+                    <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} />
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -477,13 +475,13 @@ const SuperAdminDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${seller.total_revenue || 0}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          seller.verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          seller.is_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {seller.verified ? 'Verified' : 'Pending'}
+                          {seller.is_verified ? 'Verified' : 'Pending'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {!seller.verified && (
+                        {!seller.is_verified && (
                           <button
                             onClick={() => handleVerifySeller(seller.id)}
                             className="text-green-600 hover:text-green-900 mr-3"

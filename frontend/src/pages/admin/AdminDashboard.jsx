@@ -40,25 +40,25 @@ const AdminDashboard = () => {
       };
 
       // Fetch all data in parallel
-      const [productsRes, ordersRes, usersRes, sellersRes, statsRes] = await Promise.all([
-        fetch('/api/admin/products', { headers }),
-        fetch('/api/admin/orders', { headers }),
-        fetch('/api/admin/users', { headers }),
-        fetch('/api/admin/sellers', { headers }),
-        fetch('/api/admin/dashboard/stats', { headers })
+      const [dashboardRes, productsRes, ordersRes] = await Promise.all([
+        fetch('/api/admin/dashboard', { headers }),
+        fetch('/api/admin/products-list', { headers }),
+        fetch('/api/admin/orders-list', { headers })
       ]);
 
+      const dashboardData = await dashboardRes.json();
       const productsData = await productsRes.json();
       const ordersData = await ordersRes.json();
-      const usersData = await usersRes.json();
-      const sellersData = await sellersRes.json();
-      const statsData = await statsRes.json();
 
+      setStats(dashboardData);
       setProducts(productsData.data || []);
       setOrders(ordersData.data || []);
-      setUsers(usersData.data || []);
-      setSellers(sellersData.data || []);
-      setStats(statsData);
+      setUsers([]); // Will be populated when needed
+      setSellers([]); // Will be populated when needed
+      
+      console.log('Admin Dashboard Data:', dashboardData);
+      console.log('Products:', productsData);
+      console.log('Orders:', ordersData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -219,28 +219,28 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard 
                 title="Total Revenue" 
-                value={`$${stats.total_revenue?.toLocaleString() || 0}`} 
+                value={`$${stats.stats?.revenue?.toLocaleString() || 0}`} 
                 icon={<FiDollarSign />}
                 color="bg-gradient-to-br from-green-500 to-emerald-600"
                 trend={12.5}
               />
               <StatCard 
                 title="Total Orders" 
-                value={stats.total_orders?.toLocaleString() || 0} 
+                value={stats.stats?.total_orders?.toLocaleString() || 0} 
                 icon={<FiShoppingCart />}
                 color="bg-gradient-to-br from-blue-500 to-indigo-600"
                 trend={8.2}
               />
               <StatCard 
                 title="Total Products" 
-                value={stats.total_products?.toLocaleString() || 0} 
+                value={stats.stats?.total_products?.toLocaleString() || 0} 
                 icon={<FiPackage />}
                 color="bg-gradient-to-br from-purple-500 to-pink-600"
                 trend={-2.4}
               />
               <StatCard 
-                title="Active Users" 
-                value={stats.active_users?.toLocaleString() || 0} 
+                title="Pending Sellers" 
+                value={stats.stats?.pending_sellers?.toLocaleString() || 0} 
                 icon={<FiUsers />}
                 color="bg-gradient-to-br from-orange-500 to-red-600"
                 trend={15.7}
@@ -252,7 +252,7 @@ const AdminDashboard = () => {
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-xl font-semibold mb-4">Revenue Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={stats.revenue_chart || []}>
+                  <LineChart data={stats.charts?.revenue_trend || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
@@ -263,25 +263,15 @@ const AdminDashboard = () => {
               </div>
 
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Order Distribution</h3>
+                <h3 className="text-xl font-semibold mb-4">Daily Orders</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={stats.order_distribution || []}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {(stats.order_distribution || []).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <BarChart data={stats.charts?.daily_orders || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
                     <Tooltip />
-                  </PieChart>
+                    <Bar dataKey="orders" fill="#10B981" />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
