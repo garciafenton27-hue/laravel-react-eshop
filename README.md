@@ -1,4 +1,4 @@
-# 🛒 OpenShop - Professional E-Commerce Platform
+# 🛒 EShop - Professional E-Commerce Platform
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![CI](https://github.com/abx15/laravel-react-ecommerce/actions/workflows/ci.yml/badge.svg)
