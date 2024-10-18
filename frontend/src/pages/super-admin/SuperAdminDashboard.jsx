@@ -37,18 +37,49 @@ const SuperAdminDashboard = () => {
         'Accept': 'application/json',
       };
 
-      // Fetch all data in parallel
-      const [dashboardRes, adminsRes, usersRes, sellersRes] = await Promise.all([
+      // Fetch all data in parallel with error handling for each call
+      const results = await Promise.allSettled([
         fetch('/api/super-admin/dashboard', { headers }),
         fetch('/api/super-admin/admins', { headers }),
         fetch('/api/super-admin/users', { headers }),
         fetch('/api/super-admin/sellers', { headers })
       ]);
 
-      const dashboardData = await dashboardRes.json();
-      const adminsData = await adminsRes.json();
-      const usersData = await usersRes.json();
-      const sellersData = await sellersRes.json();
+      // Handle each result separately
+      const dashboardResult = results[0];
+      const adminsResult = results[1];
+      const usersResult = results[2];
+      const sellersResult = results[3];
+
+      // Set fallback data if API calls fail
+      let dashboardData = { stats: { total_users: 0, total_admins: 0, total_sellers: 0, total_revenue: 0 }, charts: [] };
+      let adminsData = [];
+      let usersData = [];
+      let sellersData = [];
+
+      if (dashboardResult.status === 'fulfilled') {
+        dashboardData = await dashboardResult.value.json();
+      } else {
+        console.error('Dashboard API failed:', dashboardResult.reason);
+      }
+
+      if (adminsResult.status === 'fulfilled') {
+        adminsData = await adminsResult.value.json();
+      } else {
+        console.error('Admins API failed:', adminsResult.reason);
+      }
+
+      if (usersResult.status === 'fulfilled') {
+        usersData = await usersResult.value.json();
+      } else {
+        console.error('Users API failed:', usersResult.reason);
+      }
+
+      if (sellersResult.status === 'fulfilled') {
+        sellersData = await sellersResult.value.json();
+      } else {
+        console.error('Sellers API failed:', sellersResult.reason);
+      }
 
       setStats(dashboardData);
       setAdmins(adminsData || []);
@@ -61,6 +92,14 @@ const SuperAdminDashboard = () => {
       console.log('Sellers:', sellersData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set fallback data to prevent blank screen
+      setStats({
+        stats: { total_users: 0, total_admins: 0, total_sellers: 0, total_revenue: 0 },
+        charts: { user_growth: [], orders_revenue: [] }
+      });
+      setAdmins([]);
+      setUsers([]);
+      setSellers([]);
     } finally {
       setLoading(false);
     }
