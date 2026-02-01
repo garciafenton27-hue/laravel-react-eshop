@@ -8,6 +8,8 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SellerController;
+use App\Http\Controllers\AdminController;
 
 // Public Routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -42,5 +44,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('admin/categories', CategoryController::class)->except(['index']);
         Route::get('admin/orders', [OrderController::class, 'adminIndex']);
         Route::patch('admin/orders/{order}/status', [OrderController::class, 'updateStatus']);
+        Route::get('admin/sellers', [AdminController::class, 'getSellers']);
+        Route::patch('admin/sellers/{id}/approve', [AdminController::class, 'approveSeller']);
+        Route::patch('admin/sellers/{id}/reject', [AdminController::class, 'rejectSeller']);
+    });
+
+    // Seller Routes
+    Route::post('/seller/register', [SellerController::class, 'store']);
+    Route::middleware(['role:seller'])->group(function () {
+        Route::get('/seller/products', [ProductController::class, 'sellerProducts']);
+        Route::post('/seller/products', [ProductController::class, 'store']);
+        Route::put('/seller/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/seller/products/{product}', [ProductController::class, 'destroy']);
     });
 });
