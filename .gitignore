@@ -122,3 +122,10 @@ temp/
 # Backup files
 *.bak
 *.backup
+
+# Security - Login details and credentials
+LOGIN_DETAILS.md
+*.credentials
+*.secrets
+CREDS.md
+PASSWORDS.md
