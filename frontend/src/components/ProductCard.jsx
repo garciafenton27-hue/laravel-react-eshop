@@ -27,17 +27,24 @@ const ProductCard = ({ product }) => {
                 <div className="h-48 bg-gray-200 flex items-center justify-center">
                     {product.images && product.images.length > 0 ? (
                         <img
-                            src={`http://localhost:8000${product.images[0].image_path}`}
+                            src={product.images[0].image_path}
                             alt={product.name}
                             className="h-full w-full object-cover"
+                            onError={(e) => {
+                                e.target.src = '/placeholder.jpg';
+                            }}
                         />
                     ) : (
-                        <span className="text-gray-400">No Image</span>
+                        <img
+                            src="/placeholder.jpg"
+                            alt="No product image"
+                            className="h-full w-full object-cover"
+                        />
                     )}
                 </div>
                 <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-800 truncate">{product.name}</h3>
-                    <p className="text-gray-600 mt-1">₹{product.price}</p>
+                    <p className="text-gray-600 mt-1">${product.price}</p>
                     <button
                         onClick={addToCart}
                         className="mt-3 w-full flex items-center justify-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"

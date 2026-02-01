@@ -21,8 +21,16 @@ const Home = () => {
                 api.get('/categories')
             ]);
             
-            setProducts(productsResponse.data.data.data || productsResponse.data.data || []);
-            setCategories(categoriesResponse.data.data || []);
+            // Handle paginated products response
+            const productsData = productsResponse.data.data;
+            setProducts(productsData.data || productsData || []);
+            
+            // Handle categories response
+            const categoriesData = categoriesResponse.data.data;
+            setCategories(categoriesData || []);
+            
+            console.log('Products loaded:', productsData.data || productsData || []);
+            console.log('Categories loaded:', categoriesData || []);
         } catch (err) {
             console.error('Error fetching data:', err);
         } finally {
