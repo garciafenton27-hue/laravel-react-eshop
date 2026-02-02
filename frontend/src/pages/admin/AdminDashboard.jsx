@@ -39,16 +39,40 @@ const AdminDashboard = () => {
         'Accept': 'application/json',
       };
 
-      // Fetch all data in parallel
-      const [dashboardRes, productsRes, ordersRes] = await Promise.all([
+      // Fetch all data in parallel with error handling for each call
+      const results = await Promise.allSettled([
         fetch('/api/admin/dashboard', { headers }),
         fetch('/api/admin/products-list', { headers }),
         fetch('/api/admin/orders-list', { headers })
       ]);
 
-      const dashboardData = await dashboardRes.json();
-      const productsData = await productsRes.json();
-      const ordersData = await ordersRes.json();
+      // Handle each result separately
+      const dashboardResult = results[0];
+      const productsResult = results[1];
+      const ordersResult = results[2];
+
+      // Set fallback data if API calls fail
+      let dashboardData = { stats: { total_orders: 0, revenue: 0, total_products: 0, pending_sellers: 0 }, charts: [] };
+      let productsData = { data: [] };
+      let ordersData = { data: [] };
+
+      if (dashboardResult.status === 'fulfilled') {
+        dashboardData = await dashboardResult.value.json();
+      } else {
+        console.error('Dashboard API failed:', dashboardResult.reason);
+      }
+
+      if (productsResult.status === 'fulfilled') {
+        productsData = await productsResult.value.json();
+      } else {
+        console.error('Products API failed:', productsResult.reason);
+      }
+
+      if (ordersResult.status === 'fulfilled') {
+        ordersData = await ordersResult.value.json();
+      } else {
+        console.error('Orders API failed:', ordersResult.reason);
+      }
 
       setStats(dashboardData);
       setProducts(productsData.data || []);
@@ -61,6 +85,15 @@ const AdminDashboard = () => {
       console.log('Orders:', ordersData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set fallback data to prevent blank screen
+      setStats({
+        stats: { total_orders: 0, revenue: 0, total_products: 0, pending_sellers: 0 },
+        charts: { revenue_trend: [], daily_orders: [] }
+      });
+      setProducts([]);
+      setOrders([]);
+      setUsers([]);
+      setSellers([]);
     } finally {
       setLoading(false);
     }
